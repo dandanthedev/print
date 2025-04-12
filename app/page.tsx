@@ -1,103 +1,215 @@
-import Image from "next/image";
+"use client";
+import React, { useEffect, useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Card, CardContent } from "@/components/ui/card";
+import { Switch } from "@/components/ui/switch";
+import { Progress } from "@/components/ui/progress";
+import { AlertCircle, Printer, Upload } from "lucide-react";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { DoubleSidedType, PrintQuality } from "@/lib/types";
+import { getColorLevels } from "@/lib/print";
+import Link from "next/link";
+export default function PrinterUploadPage() {
+  const [file, setFile] = useState<File | null>(null);
+  const [amount, setAmount] = useState(1);
+  const [color, setColor] = useState(false);
+  const [doubleSided, setDoubleSided] = useState<DoubleSidedType>("None");
+  const [quality, setQuality] = useState<PrintQuality>("Normal");
+  const [uploadPercentage, setUploadPercentage] = useState<number | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [working, setWorking] = useState(false);
+  const [inkLevels, setInkLevels] = useState<Record<string, number> | null>({
+    black: 0,
+    yellow: 0,
+    magenta: 0,
+    cyan: 0,
+  });
 
-export default function Home() {
+  useEffect(() => {
+    getColorLevels().then(setInkLevels);
+  }, []);
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!e.target.files) return;
+    setFile(e.target.files[0]);
+  };
+
+  const handleSubmit = () => {
+    setError(null);
+    setUploadPercentage(0);
+    if (!file) return setError("Voeg een bestand toe");
+    setWorking(true);
+    const formData = new FormData();
+    formData.append("file", file);
+    formData.append("amount", amount.toString());
+    formData.append("color", color.toString());
+    formData.append("doubleSided", doubleSided.toString());
+    formData.append("quality", quality.toString());
+    const req = new XMLHttpRequest();
+    req.open("POST", "/api/upload");
+    req.send(formData);
+    req.onprogress = (e) => {
+      if (e.lengthComputable) {
+        setUploadPercentage(e.loaded / e.total);
+      }
+    };
+    req.onload = () => {
+      const res = JSON.parse(req.responseText);
+      if (req.status === 200) {
+        setUploadPercentage(100);
+        setWorking(false);
+      } else {
+        setError("Er is een fout opgetreden: " + JSON.stringify(res));
+        setWorking(false);
+      }
+    };
+  };
+
   return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm/6 text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-[family-name:var(--font-geist-mono)] font-semibold">
-              app/page.tsx
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
+    <div className="min-h-screen bg-gray-100 flex items-center justify-center p-4">
+      <Card className="w-full max-w-md shadow-xl rounded-2xl">
+        <CardContent className="p-6 space-y-6">
+          <h1 className="text-2xl font-bold text-center flex items-center justify-center gap-2">
+            <Printer />
+            Printer
+          </h1>
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
+          <div className="space-y-4">
+            <h2 className="text-lg font-semibold">Inktniveaus</h2>
+            <div>
+              <Label className="mb-1 block">Zwart ({inkLevels?.black}%)</Label>
+              <Progress value={inkLevels?.black} className="[&>*]:bg-black" />
+            </div>
+            <div>
+              <Label className="mb-1 block">Geel ({inkLevels?.yellow}%)</Label>
+              <Progress
+                value={inkLevels?.yellow}
+                className="[&>*]:bg-yellow-500"
+              />
+            </div>
+            <div>
+              <Label className="mb-1 block">
+                Magenta ({inkLevels?.magenta}%)
+              </Label>
+              <Progress
+                value={inkLevels?.magenta}
+                className="[&>*]:bg-magenta-500"
+              />
+            </div>
+            <div>
+              <Label className="mb-1 block">Cyaan ({inkLevels?.cyan}%)</Label>
+              <Progress value={inkLevels?.cyan} className="[&>*]:bg-cyan-500" />
+            </div>
+          </div>
+
+          <h2 className="text-lg font-semibold">Printen</h2>
+
+          <div className="space-y-2">
+            <Label>Bestand</Label>
+            <Input
+              type="file"
+              onChange={handleFileChange}
+              accept=".pdf,.ps,.txt,.jpg,.jpeg,.png,.gif,.pcl,.xps,.doc,.docx,.xls,.xlsx,.ppt,.pptx"
+              disabled={working}
             />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
+          </div>
+
+          <div className="space-y-2">
+            <Label>Aantal</Label>
+            <Input
+              type="number"
+              value={amount}
+              min={1}
+              max={100}
+              disabled={working}
+              onChange={(e) => {
+                const value = parseInt(e.target.value);
+                if (isNaN(value)) return;
+                setAmount(value);
+              }}
+            />
+          </div>
+
+          <div className="flex items-center justify-between">
+            <Label>Kleur</Label>
+            <Switch
+              checked={color}
+              onCheckedChange={setColor}
+              disabled={working}
+            />
+          </div>
+          <div className="flex items-center justify-between">
+            <Label>Dubbelzijdig</Label>
+            <Select
+              value={doubleSided}
+              onValueChange={(type) => setDoubleSided(type as DoubleSidedType)}
+              disabled={working}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Selecteer dubbelzijdig" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="None">Geen</SelectItem>
+                <SelectItem value="LongEdge">Lange zijde</SelectItem>
+                <SelectItem value="ShortEdge">Korte zijde</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="flex items-center justify-between">
+            <Label>Kwaliteit</Label>
+            <Select
+              value={quality}
+              onValueChange={(type) => setQuality(type as PrintQuality)}
+              disabled={working}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Selecteer kwaliteit" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="Normal">Normaal</SelectItem>
+                <SelectItem value="High">Hoog</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <Button
+            className="w-full cursor-pointer disabled:opacity-50"
+            onClick={handleSubmit}
+            disabled={working || file === null}
           >
-            Read our docs
-          </a>
-        </div>
-      </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
+            <Upload />
+            Printen!
+          </Button>
+          {uploadPercentage && (
+            <Progress className="mt-2" value={uploadPercentage} max={100} />
+          )}
+          {error && (
+            <Alert variant="destructive">
+              <AlertCircle className="h-4 w-4" />
+              <AlertTitle>Foutmelding</AlertTitle>
+              <AlertDescription>{error}</AlertDescription>
+            </Alert>
+          )}
+          {uploadPercentage === 100 && (
+            <Alert variant="default">
+              <AlertCircle className="h-4 w-4" />
+              <AlertTitle>Gelukt!</AlertTitle>
+              <AlertDescription>Je printje is onderweg.</AlertDescription>
+            </Alert>
+          )}
+          <Link href="/queue">Wachtrij</Link>
+        </CardContent>
+      </Card>
     </div>
   );
 }
