@@ -7,6 +7,7 @@ import {
   printBuffer,
   cancelAllJobs,
   cancelJob,
+  getPrinterNames,
 } from "node-cups";
 import { z } from "zod";
 import { DoubleSidedType, PrintQuality } from "./types";
@@ -62,6 +63,9 @@ export async function print(
   }
   const { copies, color, doubleSided, quality } = parsed.data;
   const printerOptions = await getPrinterOptions(color, doubleSided, quality);
+
+  const allPrinters = await getPrinterNames();
+  console.log(allPrinters);
 
   const res = await printBuffer(file, {
     copies,
