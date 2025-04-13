@@ -32,7 +32,7 @@ COPY --from=prerelease /usr/src/app .
 # install runtime dependencies
 RUN apt update
 RUN apt install cups-client -y
-RUN mkdir -p /etc/cups && echo "ServerName cups" >  /etc/cups/client.conf
+RUN mkdir -p /etc/cups && echo "ServerName cups/version=1.1" >  /etc/cups/client.conf
 
 # run the app
 USER bun
