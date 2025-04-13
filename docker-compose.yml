@@ -4,3 +4,11 @@ services:
     restart: always
     ports:
       - "3000:3000"
+    networks:
+      - cups
+
+networks:
+  cups:
+    external: true
+    name: cups
+    driver: bridge
