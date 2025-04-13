@@ -1,23 +1,6 @@
 services:
-  cups:
-    build: ./cups
-    restart: always
-    ports:
-      - "631:631"
-      - "631:631/udp"
-    networks:
-      - app-network
-
   app:
     build: .
     restart: always
     ports:
       - "3000:3000"
-    depends_on:
-      - cups
-    networks:
-      - app-network
-
-networks:
-  app-network:
-    driver: bridge
