@@ -1,6 +1,6 @@
 services:
   cups:
-    image: olbat/cupsd
+    build: ./cups
     restart: always
     ports:
       - "631:631"
