@@ -1,6 +1,6 @@
 "use server";
 const printer = "EPSON_ET_2850_Series";
-const printerNetwork = "https://192.168.2.145";
+const printerNetwork = "http://192.168.2.145";
 import {
   getCompletedQueue,
   getNotCompletedQueue,
